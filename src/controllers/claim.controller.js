@@ -1,4 +1,5 @@
 import QRCode from '../models/QRCode.model.js';
+import { recordWarrantyEvent } from '../services/warrantyEvent.service.js';
 
 const calculateExpiryDate = (claimedAt, months) => {
   const expiresAt = new Date(claimedAt);
@@ -21,6 +22,12 @@ export const getClaimPreview = async (req, res, next) => {
       claimedAt: qrcode.claimedAt,
       expiresAt: qrcode.expiresAt,
     });
+
+    recordWarrantyEvent({
+      qrcode: qrcode._id,
+      eventType: 'claim_previewed',
+      metadata: { uuid: qrcode.uuid, status: qrcode.status },
+    }).catch((err) => console.error('Failed to record claim preview event:', err.message));
   } catch (err) {
     next(err);
   }
@@ -46,6 +53,17 @@ export const claimWarranty = async (req, res, next) => {
     qrcode.expiresAt = calculateExpiryDate(claimedAt, qrcode.product.warrantyDurationMonths);
 
     await qrcode.save();
+
+    recordWarrantyEvent({
+      qrcode: qrcode._id,
+      eventType: 'claimed',
+      actor: req.user._id,
+      metadata: {
+        uuid: qrcode.uuid,
+        product: qrcode.product._id,
+        expiresAt: qrcode.expiresAt,
+      },
+    }).catch((err) => console.error('Failed to record claim event:', err.message));
 
     res.status(201).json({
       warranty: {
@@ -74,4 +92,3 @@ export const listMyWarranties = async (req, res, next) => {
     next(err);
   }
 };
-
