@@ -5,6 +5,8 @@ import helmet from 'helmet';
 
 import connectDB from './config/db.js';
 import { getEnv, validateEnv } from './config/env.js';
+import authRoutes from './routes/auth.routes.js';
+import errorHandler from './middleware/error.middleware.js';
 
 const app = express();
 const startedAt = new Date().toISOString();
@@ -29,6 +31,9 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.use('/api/auth', authRoutes);
+app.use(errorHandler);
+
 const PORT = getEnv('PORT', 5000);
 
 validateEnv();
@@ -41,4 +46,3 @@ connectDB()
     console.error('DB connection failed:', err.message);
     process.exit(1);
   });
-
