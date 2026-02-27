@@ -1,4 +1,5 @@
 import QRCode from '../models/QRCode.model.js';
+import { buildWarrantyCertificate } from '../services/certificate.service.js';
 import { recordWarrantyEvent } from '../services/warrantyEvent.service.js';
 
 const calculateExpiryDate = (claimedAt, months) => {
@@ -88,6 +89,33 @@ export const listMyWarranties = async (req, res, next) => {
       .populate('product', 'name modelNumber category warrantyDurationMonths');
 
     res.json({ warranties });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getWarrantyCertificate = async (req, res, next) => {
+  try {
+    const qrcode = await QRCode.findOne({
+      uuid: req.params.uuid,
+      claimedBy: req.user._id,
+      status: 'claimed',
+    })
+      .populate('product', 'name modelNumber category')
+      .populate('claimedBy', 'name email');
+
+    if (!qrcode) {
+      return res.status(404).json({ message: 'Warranty not found' });
+    }
+
+    recordWarrantyEvent({
+      qrcode: qrcode._id,
+      eventType: 'certificate_viewed',
+      actor: req.user._id,
+      metadata: { uuid: qrcode.uuid },
+    }).catch((err) => console.error('Failed to record certificate event:', err.message));
+
+    res.json({ certificate: buildWarrantyCertificate(qrcode) });
   } catch (err) {
     next(err);
   }
