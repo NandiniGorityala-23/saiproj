@@ -8,6 +8,7 @@ import { getEnv, validateEnv } from './config/env.js';
 import authRoutes from './routes/auth.routes.js';
 import productRoutes from './routes/product.routes.js';
 import qrcodeRoutes from './routes/qrcode.routes.js';
+import claimRoutes from './routes/claim.routes.js';
 import errorHandler from './middleware/error.middleware.js';
 
 const app = express();
@@ -36,6 +37,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/qrcodes', qrcodeRoutes);
+app.use('/api/claim', claimRoutes);
 app.use(errorHandler);
 
 const PORT = getEnv('PORT', 5000);
