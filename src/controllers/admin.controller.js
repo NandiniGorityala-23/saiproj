@@ -119,3 +119,45 @@ export const exportClaimsCsv = async (req, res, next) => {
     next(err);
   }
 };
+
+export const getBatchSummary = async (req, res, next) => {
+  try {
+    const products = await Product.find({ manufacturer: req.user._id }).select('_id name modelNumber');
+    const productIds = products.map((product) => product._id);
+
+    const batches = await Batch.find({ product: { $in: productIds } })
+      .sort({ createdAt: -1 })
+      .populate('product', 'name modelNumber');
+
+    const batchIds = batches.map((batch) => batch._id);
+    const qrCounts = await QRCode.aggregate([
+      { $match: { batch: { $in: batchIds } } },
+      {
+        $group: {
+          _id: '$batch',
+          total: { $sum: 1 },
+          claimed: { $sum: { $cond: [{ $eq: ['$status', 'claimed'] }, 1, 0] } },
+        },
+      },
+    ]);
+
+    const countMap = new Map(qrCounts.map((count) => [count._id.toString(), count]));
+
+    res.json({
+      batches: batches.map((batch) => {
+        const counts = countMap.get(batch._id.toString()) || { total: 0, claimed: 0 };
+        return {
+          id: batch._id,
+          product: batch.product,
+          quantity: batch.quantity,
+          totalCodes: counts.total,
+          claimedCodes: counts.claimed,
+          claimRate: counts.total > 0 ? Math.round((counts.claimed / counts.total) * 100) : 0,
+          createdAt: batch.createdAt,
+        };
+      }),
+    });
+  } catch (err) {
+    next(err);
+  }
+};
