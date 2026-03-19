@@ -9,6 +9,7 @@ import authRoutes from './routes/auth.routes.js';
 import productRoutes from './routes/product.routes.js';
 import qrcodeRoutes from './routes/qrcode.routes.js';
 import claimRoutes from './routes/claim.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 import errorHandler from './middleware/error.middleware.js';
 
 const app = express();
@@ -38,6 +39,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/qrcodes', qrcodeRoutes);
 app.use('/api/claim', claimRoutes);
+app.use('/api/admin', adminRoutes);
 app.use(errorHandler);
 
 const PORT = getEnv('PORT', 5000);
