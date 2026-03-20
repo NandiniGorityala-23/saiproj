@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import QRCode from '../models/QRCode.model.js';
 import { sendExpiryReminder } from '../services/email.service.js';
+import { recordWarrantyEvent } from '../services/warrantyEvent.service.js';
 
 export const sendPendingExpiryReminders = async ({ productIds } = {}) => {
   const now = new Date();
@@ -37,6 +38,14 @@ export const sendPendingExpiryReminders = async ({ productIds } = {}) => {
 
       code.notifiedAt = new Date();
       await code.save();
+      await recordWarrantyEvent({
+        qrcode: code._id,
+        eventType: 'expiry_reminder_sent',
+        metadata: {
+          email: code.claimedBy.email,
+          expiresAt: code.expiresAt,
+        },
+      });
       results.push({ uuid: code.uuid, status: 'sent' });
     } catch (err) {
       results.push({ uuid: code.uuid, status: 'failed', error: err.message });
