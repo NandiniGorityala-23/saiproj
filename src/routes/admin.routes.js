@@ -1,11 +1,11 @@
 import express from 'express';
-import { getAnalytics } from '../controllers/admin.controller.js';
+import { getAnalytics, triggerExpiryNotifications } from '../controllers/admin.controller.js';
 import { protect, restrictTo } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
 router.use(protect, restrictTo('admin'));
 router.get('/analytics', getAnalytics);
+router.post('/trigger-expiry', triggerExpiryNotifications);
 
 export default router;
-

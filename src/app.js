@@ -11,6 +11,7 @@ import qrcodeRoutes from './routes/qrcode.routes.js';
 import claimRoutes from './routes/claim.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import errorHandler from './middleware/error.middleware.js';
+import { startExpiryNotifier } from './jobs/expiryNotifier.job.js';
 
 const app = express();
 const startedAt = new Date().toISOString();
@@ -49,6 +50,7 @@ validateEnv();
 connectDB()
   .then(() => {
     app.listen(PORT, () => console.log(`OmniWarranty backend running on port ${PORT}`));
+    startExpiryNotifier();
   })
   .catch((err) => {
     console.error('DB connection failed:', err.message);

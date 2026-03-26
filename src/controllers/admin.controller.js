@@ -1,6 +1,7 @@
 import Batch from '../models/Batch.model.js';
 import Product from '../models/Product.model.js';
 import QRCode from '../models/QRCode.model.js';
+import { sendPendingExpiryReminders } from '../jobs/expiryNotifier.job.js';
 
 export const getAnalytics = async (req, res, next) => {
   try {
@@ -61,3 +62,15 @@ export const getAnalytics = async (req, res, next) => {
   }
 };
 
+export const triggerExpiryNotifications = async (req, res, next) => {
+  try {
+    const results = await sendPendingExpiryReminders();
+    res.json({
+      sent: results.filter((result) => result.status === 'sent').length,
+      total: results.length,
+      results,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
