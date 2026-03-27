@@ -38,14 +38,14 @@ export const sendPendingExpiryReminders = async ({ productIds } = {}) => {
 
       code.notifiedAt = new Date();
       await code.save();
-      await recordWarrantyEvent({
+      recordWarrantyEvent({
         qrcode: code._id,
         eventType: 'expiry_reminder_sent',
         metadata: {
           email: code.claimedBy.email,
           expiresAt: code.expiresAt,
         },
-      });
+      }).catch((err) => console.error('Failed to record expiry reminder event:', err.message));
       results.push({ uuid: code.uuid, status: 'sent' });
     } catch (err) {
       results.push({ uuid: code.uuid, status: 'failed', error: err.message });
