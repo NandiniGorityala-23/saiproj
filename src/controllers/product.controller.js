@@ -1,4 +1,5 @@
 import Product from '../models/Product.model.js';
+import { paginationMeta, parsePagination } from '../utils/pagination.js';
 
 const buildProductFilter = (user, query) => {
   const filter = { manufacturer: user._id };
@@ -12,9 +13,7 @@ const buildProductFilter = (user, query) => {
 
 export const listProducts = async (req, res, next) => {
   try {
-    const page = Math.max(Number(req.query.page) || 1, 1);
-    const limit = Math.min(Math.max(Number(req.query.limit) || 25, 1), 100);
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePagination(req.query);
     const filter = buildProductFilter(req.user, req.query);
 
     const [products, total] = await Promise.all([
@@ -27,9 +26,7 @@ export const listProducts = async (req, res, next) => {
 
     res.json({
       products,
-      total,
-      page,
-      pages: Math.ceil(total / limit),
+      ...paginationMeta({ total, page, limit }),
     });
   } catch (err) {
     next(err);

@@ -2,6 +2,7 @@ import Batch from '../models/Batch.model.js';
 import Product from '../models/Product.model.js';
 import QRCode from '../models/QRCode.model.js';
 import { createQrPayload } from '../services/qr.service.js';
+import { paginationMeta, parsePagination } from '../utils/pagination.js';
 
 export const generateQRCodes = async (req, res, next) => {
   try {
@@ -55,9 +56,10 @@ export const generateQRCodes = async (req, res, next) => {
 
 export const listQRCodes = async (req, res, next) => {
   try {
-    const page = Math.max(Number(req.query.page) || 1, 1);
-    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePagination(req.query, {
+      defaultLimit: 50,
+      maxLimit: 200,
+    });
     const products = await Product.find({ manufacturer: req.user._id }).select('_id');
     const productIds = products.map((product) => product._id);
     const filter = { product: { $in: productIds } };
@@ -73,9 +75,7 @@ export const listQRCodes = async (req, res, next) => {
 
     res.json({
       qrcodes,
-      total,
-      page,
-      pages: Math.ceil(total / limit),
+      ...paginationMeta({ total, page, limit }),
     });
   } catch (err) {
     next(err);
