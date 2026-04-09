@@ -64,7 +64,10 @@ export const getAnalytics = async (req, res, next) => {
 
 export const triggerExpiryNotifications = async (req, res, next) => {
   try {
-    const results = await sendPendingExpiryReminders();
+    const products = await Product.find({ manufacturer: req.user._id }).select('_id');
+    const productIds = products.map((product) => product._id);
+    const results = await sendPendingExpiryReminders({ productIds });
+
     res.json({
       sent: results.filter((result) => result.status === 'sent').length,
       total: results.length,

@@ -2,16 +2,22 @@ import cron from 'node-cron';
 import QRCode from '../models/QRCode.model.js';
 import { sendExpiryReminder } from '../services/email.service.js';
 
-export const sendPendingExpiryReminders = async () => {
+export const sendPendingExpiryReminders = async ({ productIds } = {}) => {
   const now = new Date();
   const in30Days = new Date();
   in30Days.setDate(now.getDate() + 30);
 
-  const expiring = await QRCode.find({
+  const filter = {
     status: 'claimed',
     expiresAt: { $gte: now, $lte: in30Days },
     notifiedAt: null,
-  })
+  };
+
+  if (productIds?.length) {
+    filter.product = { $in: productIds };
+  }
+
+  const expiring = await QRCode.find(filter)
     .populate('product', 'name modelNumber')
     .populate('claimedBy', 'name email');
 
@@ -47,4 +53,3 @@ export const startExpiryNotifier = () => {
     });
   });
 };
-
