@@ -1,7 +1,9 @@
 import Batch from '../models/Batch.model.js';
 import Product from '../models/Product.model.js';
 import QRCode from '../models/QRCode.model.js';
+import WarrantyEvent from '../models/WarrantyEvent.model.js';
 import { sendPendingExpiryReminders } from '../jobs/expiryNotifier.job.js';
+import { paginationMeta, parsePagination } from '../utils/pagination.js';
 
 const csvValue = (value) => {
   const text = value === undefined || value === null ? '' : String(value);
@@ -156,6 +158,37 @@ export const getBatchSummary = async (req, res, next) => {
           createdAt: batch.createdAt,
         };
       }),
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const listWarrantyEvents = async (req, res, next) => {
+  try {
+    const { page, limit, skip } = parsePagination(req.query, {
+      defaultLimit: 50,
+      maxLimit: 200,
+    });
+    const products = await Product.find({ manufacturer: req.user._id }).select('_id');
+    const productIds = products.map((product) => product._id);
+    const qrcodes = await QRCode.find({ product: { $in: productIds } }).select('_id');
+    const qrcodeIds = qrcodes.map((qrcode) => qrcode._id);
+    const filter = { qrcode: { $in: qrcodeIds } };
+
+    const [events, total] = await Promise.all([
+      WarrantyEvent.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('actor', 'name email role')
+        .populate('qrcode', 'uuid status claimedAt expiresAt'),
+      WarrantyEvent.countDocuments(filter),
+    ]);
+
+    res.json({
+      events,
+      ...paginationMeta({ total, page, limit }),
     });
   } catch (err) {
     next(err);
