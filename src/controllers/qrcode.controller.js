@@ -55,17 +55,29 @@ export const generateQRCodes = async (req, res, next) => {
 
 export const listQRCodes = async (req, res, next) => {
   try {
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+    const skip = (page - 1) * limit;
     const products = await Product.find({ manufacturer: req.user._id }).select('_id');
     const productIds = products.map((product) => product._id);
+    const filter = { product: { $in: productIds } };
 
-    const qrcodes = await QRCode.find({ product: { $in: productIds } })
-      .sort({ createdAt: -1 })
-      .limit(200)
-      .populate('product', 'name modelNumber');
+    const [qrcodes, total] = await Promise.all([
+      QRCode.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('product', 'name modelNumber'),
+      QRCode.countDocuments(filter),
+    ]);
 
-    res.json({ qrcodes });
+    res.json({
+      qrcodes,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+    });
   } catch (err) {
     next(err);
   }
 };
-

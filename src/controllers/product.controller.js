@@ -12,10 +12,25 @@ const buildProductFilter = (user, query) => {
 
 export const listProducts = async (req, res, next) => {
   try {
-    const products = await Product.find(buildProductFilter(req.user, req.query))
-      .sort({ createdAt: -1 });
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(req.query.limit) || 25, 1), 100);
+    const skip = (page - 1) * limit;
+    const filter = buildProductFilter(req.user, req.query);
 
-    res.json({ products });
+    const [products, total] = await Promise.all([
+      Product.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Product.countDocuments(filter),
+    ]);
+
+    res.json({
+      products,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+    });
   } catch (err) {
     next(err);
   }
@@ -68,4 +83,3 @@ export const deleteProduct = async (req, res, next) => {
     next(err);
   }
 };
-
