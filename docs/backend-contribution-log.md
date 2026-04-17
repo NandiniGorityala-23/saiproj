@@ -30,6 +30,6 @@ Contribution window: February 2026 through April 2026
 ## Follow-Ups
 
 - Add API integration tests around auth, claim, QR generation, and expiry reminders.
+- Add audit trail tests around claim previews, claims, certificate views, and expiry reminders.
 - Add email delivery audit records.
 - Add CI smoke test coverage for `GET /api/health`.
-
